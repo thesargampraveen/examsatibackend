@@ -1,0 +1,21 @@
+{
+  "name": "examsaathi-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node src/seed/seed.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "ExamSaathi REST API — Express + MongoDB",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.12.2"
+  }
+}
