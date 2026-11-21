@@ -138,8 +138,15 @@ router.post('/complete-profile', auth, async (req, res) => {
 });
 
 // GET /api/auth/me (auth) — fetch current profile
-router.get('/me', auth, (req, res) => {
-  res.json({ user: req.user });
+router.get('/me', auth, async (req, res) => {
+  try {
+    if (req.user.examCenter) {
+      await req.user.populate('examCenter', 'name city code');
+    }
+    res.json({ user: req.user });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load profile', error: err.message });
+  }
 });
 
 module.exports = router;
