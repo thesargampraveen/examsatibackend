@@ -1,11 +1,13 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
 const AVATAR_COLORS = ['#4F46E5', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+const PASSWORD_MIN = 6;
 
 function signToken(user) {
   return jwt.sign({ sub: user._id.toString() }, process.env.JWT_SECRET, {
@@ -21,72 +23,84 @@ function normalizePhone(raw) {
   return '';
 }
 
-// POST /api/auth/send-otp  { phone }
-router.post('/send-otp', async (req, res) => {
+// POST /api/auth/register  { name, phone, password }
+router.post('/register', async (req, res) => {
   try {
     const phone = normalizePhone(req.body.phone);
+    const name = String(req.body.name || '').trim();
+    const password = String(req.body.password || '');
+
     if (phone.length !== 13) {
       return res.status(400).json({ message: 'Enter a valid 10-digit mobile number' });
     }
+    if (!name) {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+    if (password.length < PASSWORD_MIN) {
+      return res.status(400).json({ message: `Password must be at least ${PASSWORD_MIN} characters` });
+    }
 
-    let user = await User.findOne({ phone });
-    if (!user) {
-      user = await User.create({
-        phone,
-        avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
-        verificationStatus: 'phone_verified',
-      });
+    const existing = await User.findOne({ phone });
+    if (existing) {
+      return res.status(409).json({ message: 'This number is already registered — please log in' });
+    }
+
+    const user = await User.create({
+      phone,
+      name: name.slice(0, 60),
+      password: await bcrypt.hash(password, 10),
+      avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
+      verificationStatus: 'profile_pending',
+    });
+
+    res.status(201).json({
+      token: signToken(user),
+      isNewUser: true,
+      user,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Registration failed', error: err.message });
+  }
+});
+
+// POST /api/auth/login  { phone, password }
+router.post('/login', async (req, res) => {
+  try {
+    const phone = normalizePhone(req.body.phone);
+    const password = String(req.body.password || '');
+
+    if (phone.length !== 13) {
+      return res.status(400).json({ message: 'Enter a valid 10-digit mobile number' });
+    }
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
+
+    // +password: the hash is select:false, so ask for it explicitly
+    const user = await User.findOne({ phone }).select('+password');
+    if (!user || !user.password) {
+      return res.status(401).json({ message: 'No account with this number — please register' });
     }
     if (user.isBanned) {
       return res.status(403).json({ message: 'This account has been suspended' });
     }
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    user.otp = { code, expiresAt: new Date(Date.now() + 10 * 60 * 1000) };
-    await user.save();
-
-    // MOCK MODE: real SMS provider is not wired yet.
-    console.log(`[MOCK OTP] ${phone} -> ${code}`);
-    res.json({
-      message: 'OTP sent',
-      // devMode OTP lets the app work without an SMS provider; remove in production
-      devOtp: process.env.NODE_ENV === 'production' ? undefined : code,
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Could not send OTP', error: err.message });
-  }
-});
-
-// POST /api/auth/verify-otp  { phone, otp }
-router.post('/verify-otp', async (req, res) => {
-  try {
-    const phone = normalizePhone(req.body.phone);
-    const code = String(req.body.otp || '').trim();
-    const user = await User.findOne({ phone });
-
-    if (!user || !user.otp.code || !user.otp.expiresAt) {
-      return res.status(400).json({ message: 'Request a new OTP first' });
-    }
-    if (user.otp.expiresAt < new Date()) {
-      return res.status(400).json({ message: 'OTP expired, request a new one' });
-    }
-    if (user.otp.code !== code) {
-      return res.status(400).json({ message: 'Incorrect OTP' });
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(401).json({ message: 'Incorrect password' });
     }
 
-    user.otp = { code: null, expiresAt: null };
-    await user.save();
     if (user.examCenter) {
       await user.populate('examCenter', 'name city code');
     }
 
     res.json({
       token: signToken(user),
-      isNewUser: !user.name,
+      isNewUser: false,
       user,
     });
   } catch (err) {
-    res.status(500).json({ message: 'Verification failed', error: err.message });
+    res.status(500).json({ message: 'Login failed', error: err.message });
   }
 });
 
