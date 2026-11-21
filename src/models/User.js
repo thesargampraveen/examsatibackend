@@ -11,6 +11,12 @@ const userSchema = new mongoose.Schema(
     exam: { type: String, trim: true, default: '' }, // JEE / NEET / UPSC / SSC / GATE / Railway ...
     examCenter: { type: mongoose.Schema.Types.ObjectId, ref: 'ExamCenter', default: null },
     examDate: { type: Date, default: null },
+    // Exam timing as picked on the clock: { hour: 1-12, minute: 0-59, period: 'AM'|'PM' }
+    examTime: {
+      hour: { type: Number, min: 1, max: 12, default: null },
+      minute: { type: Number, min: 0, max: 59, default: null },
+      period: { type: String, enum: ['AM', 'PM', null], default: null },
+    },
     // Admit-card details: retained only as long as needed for verification + center matching
     admitCard: {
       rollNumber: { type: String, trim: true, default: '' },

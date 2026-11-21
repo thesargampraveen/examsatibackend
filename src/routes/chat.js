@@ -22,7 +22,7 @@ router.get('/threads', auth, async (req, res) => {
     const connections = await Connection.find({
       status: 'accepted',
       $or: [{ requester: req.user._id }, { recipient: req.user._id }],
-    }).populate('requester recipient', 'name avatarColor exam examDate');
+    }).populate('requester recipient', 'name avatarColor exam examDate examTime');
 
     const threads = [];
     for (const c of connections) {

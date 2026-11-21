@@ -104,12 +104,26 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/complete-profile  (auth)  { name, gender, homeCity, exam, examCenterId, examDate, rollNumber }
+// POST /api/auth/complete-profile  (auth)  { name, gender, homeCity, exam, examCenterId, examDate, examTime, rollNumber }
 router.post('/complete-profile', auth, async (req, res) => {
   try {
-    const { name, gender, homeCity, exam, examCenterId, examDate, rollNumber } = req.body;
+    const { name, gender, homeCity, exam, examCenterId, examDate, examTime, rollNumber } = req.body;
     if (!name || !gender || !exam || !examCenterId) {
       return res.status(400).json({ message: 'Name, gender, exam and exam center are required' });
+    }
+
+    // examTime: { hour: 1-12, minute: 0-59, period: 'AM'|'PM' } — sanitized before storing
+    let safeExamTime = null;
+    if (examTime) {
+      const hour = Number(examTime.hour);
+      const minute = Number(examTime.minute);
+      if (
+        Number.isInteger(hour) && hour >= 1 && hour <= 12 &&
+        Number.isInteger(minute) && minute >= 0 && minute <= 59 &&
+        (examTime.period === 'AM' || examTime.period === 'PM')
+      ) {
+        safeExamTime = { hour, minute, period: examTime.period };
+      }
     }
 
     const user = req.user;
@@ -119,6 +133,7 @@ router.post('/complete-profile', auth, async (req, res) => {
     user.exam = exam;
     user.examCenter = examCenterId;
     user.examDate = examDate || null;
+    user.examTime = safeExamTime;
     if (rollNumber) {
       user.admitCard = {
         rollNumber: String(rollNumber).trim().slice(0, 40),

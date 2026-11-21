@@ -27,7 +27,7 @@ router.get('/travel', auth, async (req, res) => {
     if (genderFilter) query.gender = genderFilter;
 
     const partners = await User.find(query)
-      .select('name gender homeCity exam examCenter examDate avatarColor')
+      .select('name gender homeCity exam examCenter examDate examTime avatarColor')
       .populate('examCenter', 'name city')
       .limit(50)
       .lean();
@@ -56,7 +56,7 @@ router.get('/stay', auth, async (req, res) => {
     query.gender = genderFilter || req.user.gender;
 
     const partners = await User.find(query)
-      .select('name gender homeCity exam examDate avatarColor')
+      .select('name gender homeCity exam examDate examTime avatarColor')
       .limit(50)
       .lean();
 

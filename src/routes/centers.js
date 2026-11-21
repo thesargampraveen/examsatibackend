@@ -72,7 +72,7 @@ router.get('/:id/students', auth, async (req, res) => {
       verificationStatus: { $in: ['verified', 'profile_pending'] },
       isBanned: false,
     })
-      .select('name gender homeCity exam examDate avatarColor verificationStatus createdAt')
+      .select('name gender homeCity exam examDate examTime avatarColor verificationStatus createdAt')
       .limit(100)
       .lean();
     await annotateConnections(req.user._id, students);
