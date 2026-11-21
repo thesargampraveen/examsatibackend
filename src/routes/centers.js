@@ -2,6 +2,7 @@ const express = require('express');
 const ExamCenter = require('../models/ExamCenter');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const annotateConnections = require('../utils/annotateConnections');
 
 const router = express.Router();
 
@@ -72,7 +73,9 @@ router.get('/:id/students', auth, async (req, res) => {
       isBanned: false,
     })
       .select('name gender homeCity exam examDate avatarColor verificationStatus createdAt')
-      .limit(100);
+      .limit(100)
+      .lean();
+    await annotateConnections(req.user._id, students);
     res.json({ students });
   } catch (err) {
     res.status(500).json({ message: 'Could not load students', error: err.message });

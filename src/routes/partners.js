@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const annotateConnections = require('../utils/annotateConnections');
 
 const router = express.Router();
 
@@ -28,9 +29,11 @@ router.get('/travel', auth, async (req, res) => {
     const partners = await User.find(query)
       .select('name gender homeCity exam examCenter examDate avatarColor')
       .populate('examCenter', 'name city')
-      .limit(50);
+      .limit(50)
+      .lean();
 
     const visible = partners.filter((p) => !isBlocked(req.user, p._id));
+    await annotateConnections(req.user._id, visible);
     res.json({ partners: visible, city: from });
   } catch (err) {
     res.status(500).json({ message: 'Could not load travel partners', error: err.message });
@@ -54,9 +57,11 @@ router.get('/stay', auth, async (req, res) => {
 
     const partners = await User.find(query)
       .select('name gender homeCity exam examDate avatarColor')
-      .limit(50);
+      .limit(50)
+      .lean();
 
     const visible = partners.filter((p) => !isBlocked(req.user, p._id));
+    await annotateConnections(req.user._id, visible);
     res.json({ partners: visible });
   } catch (err) {
     res.status(500).json({ message: 'Could not load stay partners', error: err.message });
