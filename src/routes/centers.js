@@ -52,12 +52,21 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// GET /api/centers/:id/students  — verified students at the same center (excluding self + blocked)
+// GET /api/centers/:id/students  — verified students at the same center AND same exam (excluding self + blocked)
 router.get('/:id/students', auth, async (req, res) => {
   try {
+    // a student only matches others with the SAME exam — same center alone is not enough
+    if (!req.user.exam) {
+      return res.json({ students: [] });
+    }
+    const examRegex = new RegExp(
+      `^${String(req.user.exam).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+      'i'
+    );
     const blocked = req.user.blockedUsers || [];
     const students = await User.find({
       examCenter: req.params.id,
+      exam: examRegex,
       _id: { $ne: req.user._id, $nin: blocked },
       verificationStatus: { $in: ['verified', 'profile_pending'] },
       isBanned: false,
