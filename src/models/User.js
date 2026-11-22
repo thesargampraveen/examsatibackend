@@ -32,6 +32,12 @@ const userSchema = new mongoose.Schema(
       name: { type: String, default: '' },
       phone: { type: String, default: '' },
     },
+    // Exam essentials checklist: { admitCard: true, aadhar: false, ... } (item id -> ticked)
+    examChecklist: {
+      type: Map,
+      of: Boolean,
+      default: {},
+    },
     avatarColor: { type: String, default: '#4F46E5' },
     otp: {
       code: { type: String, default: null },

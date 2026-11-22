@@ -21,6 +21,7 @@ app.use('/api/connections', require('./src/routes/connections'));
 app.use('/api/chat', require('./src/routes/chat'));
 app.use('/api/guide', require('./src/routes/guide'));
 app.use('/api/safety', require('./src/routes/safety'));
+app.use('/api/checklist', require('./src/routes/checklist'));
 
 // 404 handler
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));
