@@ -45,7 +45,7 @@ router.get('/requests', auth, async (req, res) => {
     const requests = await Connection.find({
       recipient: req.user._id,
       status: 'pending',
-    }).populate('requester', 'name gender homeCity exam avatarColor verificationStatus');
+    }).populate('requester', 'name gender homeCity exam examDate examTime avatarColor verificationStatus');
     res.json({ requests: requests.filter((r) => r.requester) });
   } catch (err) {
     res.status(500).json({ message: 'Could not load requests', error: err.message });
