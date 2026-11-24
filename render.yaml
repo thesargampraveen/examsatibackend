@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: examsaathi-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false          # value Render dashboard me paste hogi
+      - key: JWT_SECRET
+        generateValue: true  # Render khud random secret bana dega
+      - key: JWT_EXPIRES_IN
+        value: 30d
