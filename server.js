@@ -19,6 +19,7 @@ app.use('/api/centers', require('./src/routes/centers'));
 app.use('/api/partners', require('./src/routes/partners'));
 app.use('/api/connections', require('./src/routes/connections'));
 app.use('/api/chat', require('./src/routes/chat'));
+app.use('/api/groups', require('./src/routes/groups'));
 app.use('/api/guide', require('./src/routes/guide'));
 app.use('/api/safety', require('./src/routes/safety'));
 app.use('/api/checklist', require('./src/routes/checklist'));
