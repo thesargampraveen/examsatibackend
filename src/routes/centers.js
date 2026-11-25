@@ -53,13 +53,18 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// GET /api/centers/:id/students  — verified students at the same center AND same exam (excluding self + blocked)
+// GET /api/centers/:id/students  — verified students at the same center, same exam AND same exam date (excluding self + blocked)
 router.get('/:id/students', auth, async (req, res) => {
   try {
-    // a student only matches others with the SAME exam — same center alone is not enough
-    if (!req.user.exam) {
+    // a student only matches others with the SAME exam on the SAME date — same center alone is not enough
+    if (!req.user.exam || !req.user.examDate) {
       return res.json({ students: [] });
     }
+    // match the whole calendar day of the user's exam date (UTC)
+    const dateStart = new Date(req.user.examDate);
+    dateStart.setUTCHours(0, 0, 0, 0);
+    const dateEnd = new Date(dateStart);
+    dateEnd.setUTCDate(dateEnd.getUTCDate() + 1);
     const examRegex = new RegExp(
       `^${String(req.user.exam).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
       'i'
@@ -68,6 +73,7 @@ router.get('/:id/students', auth, async (req, res) => {
     const students = await User.find({
       examCenter: req.params.id,
       exam: examRegex,
+      examDate: { $gte: dateStart, $lt: dateEnd },
       _id: { $ne: req.user._id, $nin: blocked },
       verificationStatus: { $in: ['verified', 'profile_pending'] },
       isBanned: false,
